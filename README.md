@@ -26,7 +26,7 @@ dispatch/
 ├── run_print_watcher.sh    ← cron wrapper for print delivery
 ├── run_email_watcher.sh    ← cron wrapper for email delivery
 ├── src/
-│   └── paperboy/
+│   └── dispatch/
 │       ├── print_watcher.py
 │       └── email_watcher.py
 ├── tests/
@@ -44,7 +44,7 @@ dispatch/
 
 ### 1. Prerequisites
 
-- Python 3.10+
+- Python 3.12+
 - [`uv`](https://github.com/astral-sh/uv) — `curl -Ls https://astral.sh/uv/install.sh | sh`
 - CUPS (for printing) — `sudo apt install cups`
 - A printer configured and visible to `lp`

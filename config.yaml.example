@@ -1,0 +1,12 @@
+watch:
+  print_dir: "/home/you/dispatch/incoming/PRINT"
+  email_dir: "/home/you/dispatch/incoming/EMAIL"
+
+email:
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  username: you@gmail.com
+  password: your_app_password   # Gmail App Password — NOT your real Gmail password
+  from_addr: you@gmail.com
+  to_addr: you@wherever.com
+  subject_prefix: "Screamsheet"
