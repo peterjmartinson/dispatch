@@ -4,6 +4,7 @@ from __future__ import annotations
 import email
 import email.header
 import imaplib
+import json
 import logging
 import os
 import shutil
@@ -23,19 +24,39 @@ import yaml
 
 
 def _open_db(sqlite_path: str) -> sqlite3.Connection:
-    """Open (or create) the SQLite database and ensure the schema exists."""
+    """Open (or create) the SQLite database and ensure the schema exists.
+
+    Schema overview:
+    - ``dispatch_log``: master event log shared by all dispatch processes.
+      Any watcher can append rows here to record what it did.
+    - ``processed_attachments``: Gmail-watcher–specific detail table.
+      Each row references a ``dispatch_log`` entry and stores the IMAP
+      coordinates needed for idempotency checks.
+    """
     db_path = Path(sqlite_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path))
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS dispatch_log (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            process    TEXT    NOT NULL,
+            event_type TEXT    NOT NULL,
+            detail     TEXT,
+            logged_at  TEXT    NOT NULL
+        )
+        """
+    )
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS processed_attachments (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            dispatch_log_id  INTEGER NOT NULL REFERENCES dispatch_log(id) ON DELETE RESTRICT,
             mailbox          TEXT    NOT NULL,
             uid              TEXT    NOT NULL,
             attachment_index INTEGER NOT NULL,
             filename         TEXT,
-            processed_at     TEXT    NOT NULL,
             UNIQUE (mailbox, uid, attachment_index)
         )
         """
@@ -59,13 +80,23 @@ def _mark_processed(
     index: int,
     filename: str | None,
 ) -> None:
+    logged_at = datetime.now(timezone.utc).isoformat()
+    detail = json.dumps({"mailbox": mailbox, "uid": uid, "index": index, "file": filename})
+    cur = conn.execute(
+        """
+        INSERT INTO dispatch_log (process, event_type, detail, logged_at)
+        VALUES ('gmail_watcher', 'attachment_saved', ?, ?)
+        """,
+        (detail, logged_at),
+    )
+    log_id = cur.lastrowid
     conn.execute(
         """
         INSERT OR IGNORE INTO processed_attachments
-            (mailbox, uid, attachment_index, filename, processed_at)
+            (dispatch_log_id, mailbox, uid, attachment_index, filename)
         VALUES (?, ?, ?, ?, ?)
         """,
-        (mailbox, uid, index, filename, datetime.now(timezone.utc).isoformat()),
+        (log_id, mailbox, uid, index, filename),
     )
     conn.commit()
 
