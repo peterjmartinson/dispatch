@@ -10,3 +10,26 @@ email:
   from_addr: you@gmail.com
   to_addr: you@wherever.com
   subject_prefix: "Screamsheet"
+
+gmail:
+  enabled: true
+
+  # IMAP connection
+  imap_host: imap.gmail.com
+  imap_port: 993
+  username: you@gmail.com
+  app_password: "xxxx xxxx xxxx xxxx"   # Gmail App Password (not your real password)
+
+  # Gmail label whose IMAP mailbox to poll (create via Gmail filter)
+  label_mailbox: "Dispatch/Print"
+
+  # Only process emails from these senders (exact address match, case-insensitive)
+  allowed_senders:
+    - peter.j.martinson@gmail.com
+    - annashavin@gmail.com
+
+  # Where to drop downloaded PDFs (defaults to watch.print_dir if omitted)
+  drop_dir: "/home/you/dispatch/incoming/PRINT"
+
+  # Local SQLite database for idempotency (relative path inside repo; gitignored)
+  sqlite_path: "state/gmail_watcher.sqlite3"
