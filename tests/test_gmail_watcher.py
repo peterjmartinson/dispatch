@@ -155,9 +155,8 @@ def test_allowed_sender_multiple_pdfs(drop_dir, sqlite_path, logger):
     conn.close()
     assert len(rows) == 2
     # Indices reflect walk() position: 0=multipart, 1=text/plain, 2=first pdf, 3=second pdf
-    assert rows[0][0] == "1"  # uid
-    assert rows[1][0] == "1"  # uid
-    assert rows[0][1] < rows[1][1]  # indices are ordered
+    assert rows[0] == ("1", 2)
+    assert rows[1] == ("1", 3)
 
 
 def test_disallowed_sender_skipped(drop_dir, sqlite_path, logger, caplog):

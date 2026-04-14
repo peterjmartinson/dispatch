@@ -322,7 +322,7 @@ def main() -> None:
     with open(config_path) as fh:
         config = yaml.safe_load(fh)
 
-    log_dir = Path(__file__).resolve().parents[3] / "logfiles"
+    log_dir = Path(__file__).resolve().parents[2] / "logfiles"
     log_dir.mkdir(exist_ok=True)
 
     logger = logging.getLogger("gmail_watcher")
