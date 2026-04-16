@@ -27,10 +27,24 @@ def _open_db(sqlite_path: str) -> sqlite3.Connection:
     db_path = Path(sqlite_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path))
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS dispatch_log (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type   TEXT    NOT NULL,
+            source       TEXT,
+            description  TEXT,
+            status       TEXT    NOT NULL DEFAULT 'ok',
+            processed_at TEXT    NOT NULL
+        )
+        """
+    )
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS processed_attachments (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            dispatch_log_id  INTEGER REFERENCES dispatch_log(id),
             mailbox          TEXT    NOT NULL,
             uid              TEXT    NOT NULL,
             attachment_index INTEGER NOT NULL,
@@ -59,15 +73,36 @@ def _mark_processed(
     index: int,
     filename: str | None,
 ) -> None:
-    conn.execute(
-        """
-        INSERT OR IGNORE INTO processed_attachments
-            (mailbox, uid, attachment_index, filename, processed_at)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (mailbox, uid, index, filename, datetime.now(timezone.utc).isoformat()),
-    )
-    conn.commit()
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        log_id = conn.execute(
+            """
+            INSERT INTO dispatch_log (event_type, source, description, status, processed_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                "gmail_attachment",
+                f"{mailbox}/uid={uid}/att={index}",
+                filename or "unnamed",
+                "ok",
+                now,
+            ),
+        ).lastrowid
+        cursor = conn.execute(
+            """
+            INSERT OR IGNORE INTO processed_attachments
+                (dispatch_log_id, mailbox, uid, attachment_index, filename, processed_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (log_id, mailbox, uid, index, filename, now),
+        )
+        if cursor.rowcount == 0:
+            conn.rollback()
+            return
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
 
 
 # ---------------------------------------------------------------------------

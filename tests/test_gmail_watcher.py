@@ -152,11 +152,14 @@ def test_allowed_sender_multiple_pdfs(drop_dir, sqlite_path, logger):
     # Check DB rows
     conn = sqlite3.connect(sqlite_path)
     rows = conn.execute("SELECT uid, attachment_index FROM processed_attachments ORDER BY attachment_index").fetchall()
+    log_rows = conn.execute("SELECT event_type FROM dispatch_log ORDER BY id").fetchall()
     conn.close()
     assert len(rows) == 2
     # Indices reflect walk() position: 0=multipart, 1=text/plain, 2=first pdf, 3=second pdf
     assert rows[0] == ("1", 2)
     assert rows[1] == ("1", 3)
+    assert len(log_rows) == 2
+    assert all(r[0] == "gmail_attachment" for r in log_rows)
 
 
 def test_disallowed_sender_skipped(drop_dir, sqlite_path, logger, caplog):
@@ -195,8 +198,10 @@ def test_rerun_idempotency(drop_dir, sqlite_path, logger):
 
     conn = sqlite3.connect(sqlite_path)
     rows = conn.execute("SELECT COUNT(*) FROM processed_attachments").fetchone()
+    log_rows = conn.execute("SELECT COUNT(*) FROM dispatch_log").fetchone()
     conn.close()
     assert rows[0] == 1, "DB should have exactly 1 row after two identical runs"
+    assert log_rows[0] == 1, "dispatch_log should have exactly 1 row after two identical runs"
 
 
 def test_non_pdf_attachment_ignored(drop_dir, sqlite_path, logger):
@@ -274,3 +279,30 @@ def test_name_angle_bracket_sender_parsed(drop_dir, sqlite_path, logger):
 
     pdfs = list(drop_dir.glob("*.pdf"))
     assert len(pdfs) == 1, "Sender with Name <addr> form should be accepted"
+
+
+def test_dispatch_log_row_content(drop_dir, sqlite_path, logger):
+    """The dispatch_log row for a single attachment has the correct source and description."""
+    raw_msg = _make_msg(
+        "peter.j.martinson@gmail.com",
+        [("myreport.pdf", _make_pdf_bytes())],
+    )
+    fake_imap = _make_fake_imap(["8"], {"8": raw_msg})
+    config = _config(drop_dir, sqlite_path)
+
+    with patch("dispatch.gmail_watcher.imaplib.IMAP4_SSL", return_value=fake_imap):
+        watch(config, logger)
+
+    conn = sqlite3.connect(sqlite_path)
+    row = conn.execute("SELECT event_type, source, description, status FROM dispatch_log").fetchone()
+    att_row = conn.execute("SELECT attachment_index FROM processed_attachments").fetchone()
+    conn.close()
+
+    assert row is not None, "dispatch_log should have one row"
+    event_type, source, description, status = row
+    assert event_type == "gmail_attachment"
+    # source should contain the mailbox, uid, and attachment index
+    att_index = att_row[0]
+    assert source == f"Dispatch/Print/uid=8/att={att_index}"
+    assert description == "myreport.pdf"
+    assert status == "ok"
