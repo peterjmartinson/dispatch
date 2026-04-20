@@ -21,7 +21,7 @@ Two independent scripts poll their respective inboxes every 5 minutes via cron. 
 
 ```
 dispatch/
-├── config.yaml             ← placeholder config (committed); filled in at deploy time
+├── config.yaml             ← placeholder config (committed); fill in locally and keep out of git
 ├── run_print_watcher.sh    ← cron wrapper for print delivery
 ├── run_email_watcher.sh    ← cron wrapper for email delivery
 ├── src/
@@ -204,7 +204,7 @@ This project uses GitHub Actions for deployment. Before deploying, add the follo
 | `EMAIL_FROM` | Sender email address |
 | `EMAIL_TO` | Recipient email address |
 | `EMAIL_SUBJECT_PREFIX` | Subject line prefix (e.g. `Screamsheet`) |
-| `SSH_PRIVATE_KEY` | Private SSH key for connecting to the deploy server |
+| `SSH_PRIVATE_KEY` | Private SSH key for connecting to the deploy server (loaded via `webfactory/ssh-agent`) |
 | `DEPLOY_HOST` | Hostname or IP of the target server |
 | `DEPLOY_USER` | SSH username on the target server |
 | `DEPLOY_PATH` | Absolute path on the server to deploy to |
