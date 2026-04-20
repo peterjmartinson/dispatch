@@ -21,8 +21,7 @@ Two independent scripts poll their respective inboxes every 5 minutes via cron. 
 
 ```
 dispatch/
-├── config.yaml             ← your local config (gitignored)
-├── config.yaml.example     ← copy this to get started
+├── config.yaml             ← placeholder config (committed); filled in at deploy time
 ├── run_print_watcher.sh    ← cron wrapper for print delivery
 ├── run_email_watcher.sh    ← cron wrapper for email delivery
 ├── src/
@@ -70,11 +69,14 @@ uv sync
 
 ### 4. Configure
 
+`config.yaml` is already in the repo with `${VARIABLE}` placeholders. For local use, copy it and fill in your values:
+
 ```bash
-cp config.yaml.example config.yaml
+cp config.yaml config.local.yaml
+# edit config.local.yaml with your real paths and credentials
 ```
 
-Edit `config.yaml`:
+Or edit `config.yaml` directly on your server (it is gitignored when filled in):
 
 ```yaml
 watch:
@@ -184,3 +186,25 @@ uv run pytest
 - Know what a screamsheet is
 - Manage schedules (that's cron's job)
 - Retry forever — if a file keeps failing, check the logs and fix the underlying issue
+
+---
+
+## Deployment Configuration
+
+This project uses GitHub Actions for deployment. Before deploying, add the following secrets in **Settings → Secrets and variables → Actions**:
+
+| Secret | Description |
+|---|---|
+| `PRINT_DIR` | Absolute path to the print watch folder on the server |
+| `EMAIL_DIR` | Absolute path to the email watch folder on the server |
+| `SMTP_HOST` | SMTP server hostname (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | SMTP port (e.g. `587`) |
+| `EMAIL_USERNAME` | Email account username |
+| `EMAIL_PASSWORD` | Email app password (not your real account password) |
+| `EMAIL_FROM` | Sender email address |
+| `EMAIL_TO` | Recipient email address |
+| `EMAIL_SUBJECT_PREFIX` | Subject line prefix (e.g. `Screamsheet`) |
+| `SSH_PRIVATE_KEY` | Private SSH key for connecting to the deploy server |
+| `DEPLOY_HOST` | Hostname or IP of the target server |
+| `DEPLOY_USER` | SSH username on the target server |
+| `DEPLOY_PATH` | Absolute path on the server to deploy to |

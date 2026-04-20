@@ -1,0 +1,12 @@
+watch:
+  print_dir: "${PRINT_DIR}"
+  email_dir: "${EMAIL_DIR}"
+
+email:
+  smtp_host: "${SMTP_HOST}"
+  smtp_port: "${SMTP_PORT}"
+  username: "${EMAIL_USERNAME}"
+  password: "${EMAIL_PASSWORD}"
+  from_addr: "${EMAIL_FROM}"
+  to_addr: "${EMAIL_TO}"
+  subject_prefix: "${EMAIL_SUBJECT_PREFIX}"
