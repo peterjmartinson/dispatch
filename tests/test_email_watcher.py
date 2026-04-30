@@ -146,3 +146,19 @@ def test_network_failure_leaves_file(inbox, logger, caplog):
     assert pdf.exists()
     assert not (email_dir / "SENT" / "test.pdf").exists()
     assert any(r.levelno == logging.ERROR for r in caplog.records)
+
+
+def test_destination_already_exists(inbox, logger):
+    """When SENT/test.pdf already exists, the move silently overwrites it (documents overwrite-on-collision behaviour)."""
+    config, email_dir = inbox
+    pdf = _place_pdf(email_dir)
+    # Pre-place a file with the same name in the destination directory.
+    _place_pdf(email_dir / "SENT")
+
+    mock_smtp = MagicMock()
+    with patch("dispatch.email_watcher.smtplib.SMTP", return_value=mock_smtp):
+        with patch("dispatch.email_watcher.fcntl.flock"):
+            watch(config, logger)
+
+    assert not pdf.exists(), "PDF should have been moved out of the inbox"
+    assert (email_dir / "SENT" / "test.pdf").exists()
