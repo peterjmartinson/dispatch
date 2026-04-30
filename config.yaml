@@ -3,23 +3,23 @@ watch:
   email_dir: "${EMAIL_DIR}"
 
 email:
-  smtp_host: "${SMTP_HOST}"
-  smtp_port: "${SMTP_PORT}"
   username: "${EMAIL_USERNAME}"
   password: "${EMAIL_PASSWORD}"
-  from_addr: "${EMAIL_FROM}"
+  from_addr: "${EMAIL_USERNAME}"
   to_addr: "${EMAIL_TO}"
-  subject_prefix: "${EMAIL_SUBJECT_PREFIX}"
+  smtp_host: "smtp.gmail.com"
+  smtp_port: 587
+  subject_prefix: "DISPATCH: "
 
 gmail:
-  enabled: true
-  imap_host: "${GMAIL_IMAP_HOST}"
-  imap_port: "${GMAIL_IMAP_PORT}"
   username: "${GMAIL_USERNAME}"
   app_password: "${GMAIL_APP_PASSWORD}"
-  label_mailbox: "${GMAIL_LABEL_MAILBOX}"
   allowed_senders:
     - "${GMAIL_ALLOWED_SENDER_1}"
     - "${GMAIL_ALLOWED_SENDER_2}"
-  drop_dir: "${GMAIL_DROP_DIR}"
-  sqlite_path: "${GMAIL_SQLITE_PATH}"
+  drop_dir: "${PRINT_DIR}"
+  label_mailbox: "Dispatch/Print"
+  sqlite_path: "/home/peter/database"
+  enabled: true
+  imap_host: "imap.gmail.com"
+  imap_port: 993
