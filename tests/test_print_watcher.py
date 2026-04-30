@@ -119,3 +119,19 @@ def test_failed_print_leaves_file(inbox, logger, caplog):
     assert pdf.exists(), "File should remain in inbox after failed print"
     assert not (print_dir / "PRINTED" / "test.pdf").exists()
     assert any(r.levelno == logging.ERROR for r in caplog.records)
+
+
+def test_destination_already_exists(inbox, logger):
+    """When PRINTED/test.pdf already exists, the move silently overwrites it (documents overwrite-on-collision behaviour)."""
+    config, print_dir = inbox
+    pdf = _place_pdf(print_dir)
+    # Pre-place a file with the same name in the destination directory.
+    _place_pdf(print_dir / "PRINTED")
+
+    with patch("dispatch.print_watcher.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stderr=b"")
+        with patch("dispatch.print_watcher.fcntl.flock"):
+            watch(config, logger)
+
+    assert not pdf.exists(), "PDF should have been moved out of the inbox"
+    assert (print_dir / "PRINTED" / "test.pdf").exists()
