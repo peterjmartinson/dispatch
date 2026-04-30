@@ -4,16 +4,29 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
+
+    env:
+      RELEASES_BASE: /home/peter/Code/dispatch_releases
+      LIVE_PATH: /home/peter/Code/dispatch_live
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Deploy to release directory
+        id: deploy
+        run: |
+          RELEASE_DIR="$RELEASES_BASE/release_$(date +%Y%m%d%H%M%S)"
+          mkdir -p "$RELEASE_DIR"
+          rsync -a --exclude='.git' ./ "$RELEASE_DIR/"
+          echo "release_dir=$RELEASE_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Substitute config placeholders
         env:
@@ -26,18 +39,13 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GMAIL_ALLOWED_SENDER_1: ${{ secrets.GMAIL_ALLOWED_SENDER_1 }}
           GMAIL_ALLOWED_SENDER_2: ${{ secrets.GMAIL_ALLOWED_SENDER_2 }}
-        run: envsubst < config.yaml > config.filled.yaml && mv config.filled.yaml config.yaml
-
-      - name: Set up SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy to server
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-          rsync -avz --exclude='.git' ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH"
+          RELEASE_DIR="${{ steps.deploy.outputs.release_dir }}"
+          envsubst < "$RELEASE_DIR/config.yaml" > "$RELEASE_DIR/config.filled.yaml"
+          mv "$RELEASE_DIR/config.filled.yaml" "$RELEASE_DIR/config.yaml"
+
+      - name: Switch symlink
+        run: ln -snf "${{ steps.deploy.outputs.release_dir }}" "$LIVE_PATH"
+
+      - name: Clean up old releases
+        run: ls -dt "$RELEASES_BASE"/release_* | tail -n +4 | xargs -r rm -rf
