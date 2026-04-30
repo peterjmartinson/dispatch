@@ -10,3 +10,16 @@ email:
   from_addr: "${EMAIL_FROM}"
   to_addr: "${EMAIL_TO}"
   subject_prefix: "${EMAIL_SUBJECT_PREFIX}"
+
+gmail:
+  enabled: true
+  imap_host: "${GMAIL_IMAP_HOST}"
+  imap_port: "${GMAIL_IMAP_PORT}"
+  username: "${GMAIL_USERNAME}"
+  app_password: "${GMAIL_APP_PASSWORD}"
+  label_mailbox: "${GMAIL_LABEL_MAILBOX}"
+  allowed_senders:
+    - "${GMAIL_ALLOWED_SENDER_1}"
+    - "${GMAIL_ALLOWED_SENDER_2}"
+  drop_dir: "${GMAIL_DROP_DIR}"
+  sqlite_path: "${GMAIL_SQLITE_PATH}"
