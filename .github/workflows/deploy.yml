@@ -17,24 +17,15 @@ jobs:
 
       - name: Substitute config placeholders
         env:
-          PRINT_DIR: ${{ secrets.PRINT_DIR }}
-          EMAIL_DIR: ${{ secrets.EMAIL_DIR }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          PRINT_DIR: ${{ vars.PRINT_DIR }}
+          EMAIL_DIR: ${{ vars.EMAIL_DIR }}
           EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
-          EMAIL_SUBJECT_PREFIX: ${{ secrets.EMAIL_SUBJECT_PREFIX }}
-          GMAIL_IMAP_HOST: ${{ secrets.GMAIL_IMAP_HOST }}
-          GMAIL_IMAP_PORT: ${{ secrets.GMAIL_IMAP_PORT }}
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          GMAIL_LABEL_MAILBOX: ${{ secrets.GMAIL_LABEL_MAILBOX }}
           GMAIL_ALLOWED_SENDER_1: ${{ secrets.GMAIL_ALLOWED_SENDER_1 }}
           GMAIL_ALLOWED_SENDER_2: ${{ secrets.GMAIL_ALLOWED_SENDER_2 }}
-          GMAIL_DROP_DIR: ${{ secrets.GMAIL_DROP_DIR }}
-          GMAIL_SQLITE_PATH: ${{ secrets.GMAIL_SQLITE_PATH }}
         run: envsubst < config.yaml > config.filled.yaml && mv config.filled.yaml config.yaml
 
       - name: Set up SSH agent
