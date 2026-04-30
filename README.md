@@ -221,3 +221,25 @@ uv run pytest
 - Manage schedules (that's cron's job)
 - Retry forever — if a file keeps failing, check the logs and fix the underlying issue
 - Modify Gmail state (the Gmail watcher is purely read-only)
+
+---
+
+## Deployment Configuration
+
+This project uses GitHub Actions for deployment. Before deploying, add the following secrets in **Settings → Secrets and variables → Actions**:
+
+| Secret | Description |
+|---|---|
+| `PRINT_DIR` | Absolute path to the print watch folder on the server |
+| `EMAIL_DIR` | Absolute path to the email watch folder on the server |
+| `SMTP_HOST` | SMTP server hostname (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | SMTP port (e.g. `587`) |
+| `EMAIL_USERNAME` | Email account username |
+| `EMAIL_PASSWORD` | Email app password (not your real account password) |
+| `EMAIL_FROM` | Sender email address |
+| `EMAIL_TO` | Recipient email address |
+| `EMAIL_SUBJECT_PREFIX` | Subject line prefix (e.g. `Screamsheet`) |
+| `SSH_PRIVATE_KEY` | Private SSH key for connecting to the deploy server (loaded via `webfactory/ssh-agent`) |
+| `DEPLOY_HOST` | Hostname or IP of the target server |
+| `DEPLOY_USER` | SSH username on the target server |
+| `DEPLOY_PATH` | Absolute path on the server to deploy to |
