@@ -19,7 +19,7 @@ gmail:
     - "${GMAIL_ALLOWED_SENDER_2}"
   drop_dir: "${PRINT_DIR}"
   label_mailbox: "Dispatch/Print"
-  sqlite_path: "/home/peter/database"
+  sqlite_path: "/home/peter/database/gmail_watcher.sqlite3"
   enabled: true
   imap_host: "imap.gmail.com"
   imap_port: 993
