@@ -53,6 +53,9 @@ jobs:
           envsubst < "$RELEASE_DIR/config.yaml" > "$RELEASE_DIR/config.filled.yaml"
           mv "$RELEASE_DIR/config.filled.yaml" "$RELEASE_DIR/config.yaml"
 
+      - name: Make runner scripts executable
+        run: chmod +x "${{ steps.deploy.outputs.release_dir }}"/*.sh
+
       - name: Switch symlink
         run: ln -snf "${{ steps.deploy.outputs.release_dir }}" "$LIVE_PATH"
 
