@@ -121,6 +121,21 @@ def test_failed_print_leaves_file(inbox, logger, caplog):
     assert any(r.levelno == logging.ERROR for r in caplog.records)
 
 
+def test_lp_called_with_duplex_option(inbox, logger):
+    """lp is invoked with -o sides=two-sided-long-edge so prints default to duplex."""
+    config, print_dir = inbox
+    _place_pdf(print_dir)
+
+    with patch("dispatch.print_watcher.subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stderr=b"")
+        with patch("dispatch.print_watcher.fcntl.flock"):
+            watch(config, logger)
+
+    args = mock_run.call_args[0][0]
+    assert "-o" in args
+    assert args[args.index("-o") + 1] == "sides=two-sided-long-edge"
+
+
 def test_destination_already_exists(inbox, logger):
     """When PRINTED/test.pdf already exists, the move silently overwrites it (documents overwrite-on-collision behaviour)."""
     config, print_dir = inbox
