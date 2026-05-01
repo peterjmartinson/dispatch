@@ -1,4 +1,7 @@
-"""Print watcher — polls an inbox directory for PDF files and sends each to the default printer."""
+"""Print watcher — polls an inbox directory for PDF files and sends each to the default printer.
+
+Prints are sent with duplex (two-sided, long-edge binding) enabled by default.
+"""
 from __future__ import annotations
 
 import fcntl
@@ -47,8 +50,9 @@ def _try_lock(path: Path, logger: logging.Logger) -> bool:
 
 
 def _submit(pdf: Path, printed_dir: Path, logger: logging.Logger) -> None:
-    """Send *pdf* to the default printer via ``lp``; move it to *printed_dir* on success."""
-    result = subprocess.run(["lp", str(pdf)], capture_output=True)
+    """Send *pdf* to the default printer via ``lp`` with duplex enabled; move it to *printed_dir* on success."""
+    # Many printers support the CUPS option -o sides=two-sided-long-edge for duplex printing.
+    result = subprocess.run(["lp", "-o", "sides=two-sided-long-edge", str(pdf)], capture_output=True)
     if result.returncode == 0:
         dest = printed_dir / pdf.name
         shutil.move(str(pdf), dest)
