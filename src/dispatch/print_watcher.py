@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import fcntl
 import logging
+import os
 import shutil
 import subprocess
 from logging.handlers import RotatingFileHandler
@@ -66,7 +67,7 @@ def _submit(pdf: Path, printed_dir: Path, logger: logging.Logger) -> None:
 def main() -> None:
     config_path = Path(__file__).resolve().parents[2] / "config.yaml"
     with open(config_path) as fh:
-        config = yaml.safe_load(fh)
+        config = yaml.safe_load(os.path.expandvars(fh.read()))
 
     log_dir = Path(__file__).resolve().parents[3] / "logfiles"
     log_dir.mkdir(exist_ok=True)

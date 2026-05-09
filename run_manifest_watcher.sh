@@ -6,4 +6,4 @@ cd "$SCRIPT_DIR"
 
 set -a; source <(sed 's/\r//' .env); set +a
 source .venv/bin/activate
-python -m dispatch.email_watcher
+python -m dispatch.manifest_watcher
