@@ -58,7 +58,7 @@ def test_pdf_detected(inbox, logger):
 
     # After a successful run the file should have moved to PRINTED/
     assert not pdf.exists(), "PDF should have been moved out of the inbox"
-    assert (print_dir / "PRINTED" / "test.pdf").exists()
+    assert any((print_dir / "PRINTED").glob("test.*.pdf"))
 
 
 def test_non_pdf_ignored(inbox, logger):
@@ -101,7 +101,7 @@ def test_successful_print_moves_file(inbox, logger, caplog):
                 watch(config, logger)
 
     assert not pdf.exists()
-    assert (print_dir / "PRINTED" / "test.pdf").exists()
+    assert any((print_dir / "PRINTED").glob("test.*.pdf"))
     assert any(r.levelno == logging.INFO for r in caplog.records)
 
 

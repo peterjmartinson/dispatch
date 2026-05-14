@@ -25,7 +25,7 @@ from dispatch.manifest_watcher import (
 def print_dir(tmp_path):
     d = tmp_path / "PRINT"
     d.mkdir()
-    (d / "PRINTED").mkdir()
+    (d / "SENT").mkdir()
     return d
 
 
@@ -33,7 +33,7 @@ def print_dir(tmp_path):
 def config(tmp_path, print_dir):
     db = tmp_path / "manifest_watcher.sqlite3"
     return {
-        "watch": {"print_dir": str(print_dir)},
+        "watch": {"email_dir": str(print_dir)},
         "manifest": {
             "smtp_host": "smtp.example.com",
             "smtp_port": 587,
@@ -94,8 +94,8 @@ def test_folder_with_manifest_is_processed(print_dir, config, logger):
     with patch("dispatch.manifest_watcher.smtplib.SMTP", return_value=mock_smtp):
         watch(config, logger)
 
-    assert not folder.exists(), "Folder should be moved to PRINTED on success"
-    assert (print_dir / "PRINTED" / "job-001").exists()
+    assert not folder.exists(), "Folder should be moved to SENT on success"
+    assert any((print_dir / "SENT").glob("job-001.*"))
 
 
 def test_folder_without_manifest_is_ignored(print_dir, config, logger):
@@ -241,8 +241,8 @@ def test_success_logs_ok_to_db(print_dir, config, logger):
     assert row[2] == 2
 
 
-def test_success_moves_folder_to_printed(print_dir, config, logger):
-    """A successful send moves the entire folder to PRINTED/."""
+def test_success_moves_folder_to_sent(print_dir, config, logger):
+    """A successful send moves the entire folder to SENT/."""
     folder = _make_folder(print_dir, "job-005", {"to": "r@r.com", "subject": "S", "body": "B"})
 
     mock_smtp = MagicMock()
@@ -250,7 +250,7 @@ def test_success_moves_folder_to_printed(print_dir, config, logger):
         watch(config, logger)
 
     assert not folder.exists()
-    assert (print_dir / "PRINTED" / "job-005").exists()
+    assert any((print_dir / "SENT").glob("job-005.*"))
 
 
 # ---------------------------------------------------------------------------

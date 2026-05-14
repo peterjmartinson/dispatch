@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 import subprocess
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -51,7 +52,8 @@ def _submit(pdf: Path, printed_dir: Path, logger: logging.Logger) -> None:
     """Send *pdf* to the default printer via ``lp``; move it to *printed_dir* on success."""
     result = subprocess.run(["lp", str(pdf)], capture_output=True)
     if result.returncode == 0:
-        dest = printed_dir / pdf.name
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        dest = printed_dir / f"{pdf.stem}.{ts}{pdf.suffix}"
         shutil.move(str(pdf), dest)
         logger.info("OK: %s sent to printer → %s", pdf.name, dest)
     else:

@@ -1,4 +1,4 @@
-"""Manifest watcher — polls print_dir for manifest folders and sends each as a multi-attachment email."""
+"""Manifest watcher — polls email_dir for manifest folders and sends each as a multi-attachment email."""
 from __future__ import annotations
 
 import logging
@@ -138,17 +138,17 @@ _REQUIRED_FIELDS = {"to", "subject", "body"}
 
 
 def watch(config: dict, logger: logging.Logger) -> None:
-    """Scan print_dir for manifest folders and send each as a multi-attachment email."""
-    print_dir = Path(config["watch"]["print_dir"])
-    printed_dir = print_dir / "PRINTED"
-    printed_dir.mkdir(parents=True, exist_ok=True)
+    """Scan email_dir for manifest folders and send each as a multi-attachment email."""
+    email_dir = Path(config["watch"]["email_dir"])
+    sent_dir = email_dir / "SENT"
+    sent_dir.mkdir(parents=True, exist_ok=True)
 
     manifest_cfg = config["manifest"]
     conn = _open_db(manifest_cfg["sqlite_path"])
 
-    subdirs = sorted(p for p in print_dir.iterdir() if p.is_dir() and p.name != "PRINTED")
+    subdirs = sorted(p for p in email_dir.iterdir() if p.is_dir() and p.name != "SENT")
     if not subdirs:
-        logger.info("No subdirectories found in %s", print_dir)
+        logger.info("No subdirectories found in %s", email_dir)
         return
 
     for folder in subdirs:
@@ -200,7 +200,8 @@ def watch(config: dict, logger: logging.Logger) -> None:
 
         # --- Success ---
         _log_attempt(conn, folder_name, "ok", to_addr=manifest["to"], file_count=len(attachments))
-        dest = printed_dir / folder_name
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        dest = sent_dir / f"{folder_name}.{ts}"
         shutil.move(str(folder), str(dest))
         logger.info("OK: %s sent to %s → %s", folder_name, manifest["to"], dest)
 

@@ -66,7 +66,7 @@ def test_pdf_detected(inbox, logger):
             watch(config, logger)
 
     assert not pdf.exists()
-    assert (email_dir / "SENT" / "test.pdf").exists()
+    assert any((email_dir / "SENT").glob("test.*.pdf"))
 
 
 def test_non_pdf_ignored(inbox, logger):
@@ -109,7 +109,7 @@ def test_successful_send_moves_file(inbox, logger, caplog):
                 watch(config, logger)
 
     assert not pdf.exists()
-    assert (email_dir / "SENT" / "test.pdf").exists()
+    assert any((email_dir / "SENT").glob("test.*.pdf"))
     assert any(r.levelno == logging.INFO for r in caplog.records)
 
 
