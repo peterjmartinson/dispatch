@@ -6,8 +6,10 @@ from __future__ import annotations
 
 import fcntl
 import logging
+import os
 import shutil
 import subprocess
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -54,7 +56,8 @@ def _submit(pdf: Path, printed_dir: Path, logger: logging.Logger) -> None:
     # Many printers support the CUPS option -o sides=two-sided-long-edge for duplex printing.
     result = subprocess.run(["lp", "-o", "sides=two-sided-long-edge", str(pdf)], capture_output=True)
     if result.returncode == 0:
-        dest = printed_dir / pdf.name
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        dest = printed_dir / f"{pdf.stem}.{ts}{pdf.suffix}"
         shutil.move(str(pdf), dest)
         logger.info("OK: %s sent to printer → %s", pdf.name, dest)
     else:
@@ -70,7 +73,7 @@ def _submit(pdf: Path, printed_dir: Path, logger: logging.Logger) -> None:
 def main() -> None:
     config_path = Path(__file__).resolve().parents[2] / "config.yaml"
     with open(config_path) as fh:
-        config = yaml.safe_load(fh)
+        config = yaml.safe_load(os.path.expandvars(fh.read()))
 
     log_dir = Path(__file__).resolve().parents[3] / "logfiles"
     log_dir.mkdir(exist_ok=True)

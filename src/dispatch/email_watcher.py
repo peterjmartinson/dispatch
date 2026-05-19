@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import fcntl
 import logging
+import os
 import shutil
 import smtplib
+from datetime import datetime, timezone
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -75,7 +77,8 @@ def _send(pdf: Path, sent_dir: Path, email_cfg: dict, logger: logging.Logger) ->
             msg = _build_message(pdf, email_cfg)
             smtp.sendmail(email_cfg["from_addr"], email_cfg["to_addr"], msg.as_string())
 
-        dest = sent_dir / pdf.name
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+        dest = sent_dir / f"{pdf.stem}.{ts}{pdf.suffix}"
         shutil.move(str(pdf), dest)
         logger.info("OK: %s sent to %s → %s", pdf.name, email_cfg["to_addr"], dest)
 
@@ -93,7 +96,7 @@ def _send(pdf: Path, sent_dir: Path, email_cfg: dict, logger: logging.Logger) ->
 def main() -> None:
     config_path = Path(__file__).resolve().parents[2] / "config.yaml"
     with open(config_path) as fh:
-        config = yaml.safe_load(fh)
+        config = yaml.safe_load(os.path.expandvars(fh.read()))
 
     log_dir = Path(__file__).resolve().parents[3] / "logfiles"
     log_dir.mkdir(exist_ok=True)

@@ -11,6 +11,15 @@ email:
   smtp_port: 587
   subject_prefix: "DISPATCH: "
 
+manifest:
+  smtp_host: "${MANIFEST_SMTP_HOST}"
+  smtp_port: 587
+  username: "${MANIFEST_USERNAME}"
+  password: "${MANIFEST_PASSWORD}"
+  from_addr: "${MANIFEST_FROM_ADDR}"
+  alert_to: "${MANIFEST_ALERT_TO}"
+  sqlite_path: "${MANIFEST_SQLITE_PATH}"
+
 gmail:
   username: "${GMAIL_USERNAME}"
   app_password: "${GMAIL_APP_PASSWORD}"
