@@ -306,3 +306,36 @@ def test_dispatch_log_row_content(drop_dir, sqlite_path, logger):
     assert source == f"Dispatch/Print/uid=8/att={att_index}"
     assert description == "myreport.pdf"
     assert status == "ok"
+
+
+def test_processed_uids_skip_fetch_on_subsequent_runs(drop_dir, sqlite_path, logger):
+    """Already processed messages (ok, disallowed sender, no-pdf) do not trigger IMAP FETCH."""
+    msg_ok = _make_msg("peter.j.martinson@gmail.com", [("doc.pdf", _make_pdf_bytes())])
+    msg_disallowed = _make_msg("spammer@evil.com", [("spam.pdf", _make_pdf_bytes())])
+    msg_nopdf = _make_msg("peter.j.martinson@gmail.com", [], include_text=True)
+
+    messages = {"10": msg_ok, "11": msg_disallowed, "12": msg_nopdf}
+    fake_imap1 = _make_fake_imap(["10", "11", "12"], messages)
+    config = _config(drop_dir, sqlite_path)
+
+    # First run processes all 3
+    with patch("dispatch.gmail_watcher.imaplib.IMAP4_SSL", return_value=fake_imap1):
+        watch(config, logger)
+
+    assert len(list(drop_dir.glob("*.pdf"))) == 1
+
+    # Verify rows in processed_messages
+    conn = sqlite3.connect(sqlite_path)
+    status_rows = dict(conn.execute("SELECT uid, status FROM processed_messages").fetchall())
+    conn.close()
+    assert status_rows == {"10": "ok", "11": "skipped_sender", "12": "no_pdf"}
+
+    # Second run with same UIDs should NEVER call FETCH
+    fake_imap2 = _make_fake_imap(["10", "11", "12"], messages)
+    with patch("dispatch.gmail_watcher.imaplib.IMAP4_SSL", return_value=fake_imap2):
+        watch(config, logger)
+
+    # SEARCH should have been called, but FETCH should never have been called on fake_imap2
+    fetch_calls = [call for call in fake_imap2.uid.call_args_list if call[0][0] == "FETCH"]
+    assert len(fetch_calls) == 0, f"Expected 0 FETCH calls on rerun, got {len(fetch_calls)}"
+
