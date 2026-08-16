@@ -49,6 +49,12 @@ jobs:
           GMAIL_ALLOWED_SENDER_1: ${{ secrets.GMAIL_ALLOWED_SENDER_1 }}
           GMAIL_ALLOWED_SENDER_2: ${{ secrets.GMAIL_ALLOWED_SENDER_2 }}
           GMAIL_ALLOWED_SENDER_3: ${{ secrets.GMAIL_ALLOWED_SENDER_3 }}
+          MANIFEST_SMTP_HOST: ${{ secrets.MANIFEST_SMTP_HOST }}
+          MANIFEST_USERNAME: ${{ secrets.MANIFEST_USERNAME }}
+          MANIFEST_PASSWORD: ${{ secrets.MANIFEST_PASSWORD }}
+          MANIFEST_FROM_ADDR: ${{ secrets.MANIFEST_FROM_ADDR }}
+          MANIFEST_ALERT_TO: ${{ secrets.MANIFEST_ALERT_TO }}
+          MANIFEST_SQLITE_PATH: ${{ vars.MANIFEST_SQLITE_PATH }}
         run: |
           RELEASE_DIR="${{ steps.deploy.outputs.release_dir }}"
           envsubst < "$RELEASE_DIR/config.yaml" > "$RELEASE_DIR/config.filled.yaml"
