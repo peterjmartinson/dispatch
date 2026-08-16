@@ -54,8 +54,55 @@ def _open_db(sqlite_path: str) -> sqlite3.Connection:
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS processed_messages (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            mailbox      TEXT    NOT NULL,
+            uid          TEXT    NOT NULL,
+            status       TEXT    NOT NULL DEFAULT 'ok',
+            processed_at TEXT    NOT NULL,
+            UNIQUE (mailbox, uid)
+        )
+        """
+    )
     conn.commit()
     return conn
+
+
+def _get_processed_uids(conn: sqlite3.Connection, mailbox: str) -> set[str]:
+    """Return the set of message UIDs already recorded as processed for this mailbox."""
+    rows = conn.execute(
+        """
+        SELECT uid FROM processed_messages WHERE mailbox=?
+        UNION
+        SELECT uid FROM processed_attachments WHERE mailbox=?
+        """,
+        (mailbox, mailbox),
+    ).fetchall()
+    return {str(row[0]) for row in rows}
+
+
+def _mark_message_processed(
+    conn: sqlite3.Connection,
+    mailbox: str,
+    uid: str,
+    status: str = "ok",
+) -> None:
+    """Record that a message UID has been processed (whether ok, skipped, or no attachments)."""
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO processed_messages (mailbox, uid, status, processed_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (mailbox, uid, status, now),
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
 
 
 def _is_processed(conn: sqlite3.Connection, mailbox: str, uid: str, index: int) -> bool:
@@ -231,7 +278,7 @@ def _process_mailbox(
     conn: sqlite3.Connection,
     logger: logging.Logger,
 ) -> None:
-    """SELECT the mailbox and iterate over all messages."""
+    """SELECT the mailbox and iterate over new messages."""
     status, data = imap.select(f'"{mailbox}"', readonly=True)
     if status != "OK":
         logger.error("Could not SELECT mailbox %r: %s", mailbox, data)
@@ -250,9 +297,25 @@ def _process_mailbox(
         logger.info("No messages found in mailbox %r", mailbox)
         return
 
-    logger.info("Found %d message(s) in %r; checking for new PDF attachments", len(uid_list), mailbox)
+    processed_uids = _get_processed_uids(conn, mailbox)
+    unprocessed_uids = [uid for uid in uid_list if uid not in processed_uids]
 
-    for uid in uid_list:
+    if not unprocessed_uids:
+        logger.info(
+            "Found %d message(s) in %r; all already processed",
+            len(uid_list),
+            mailbox,
+        )
+        return
+
+    logger.info(
+        "Found %d message(s) in %r (%d new); checking for new PDF attachments",
+        len(uid_list),
+        mailbox,
+        len(unprocessed_uids),
+    )
+
+    for uid in unprocessed_uids:
         _process_message(imap, mailbox, uid, allowed_senders, drop_dir, conn, logger)
 
 
@@ -288,6 +351,7 @@ def _process_message(
 
     if allowed_senders and sender not in allowed_senders:
         logger.info("Skipping UID %s — sender %r not in allowed list", uid, sender)
+        _mark_message_processed(conn, mailbox, uid, "skipped_sender")
         return
 
     # Walk MIME parts and collect PDF attachments
@@ -300,6 +364,7 @@ def _process_message(
 
     if not pdf_parts:
         logger.info("UID %s from %s: no PDF attachments found", uid, sender)
+        _mark_message_processed(conn, mailbox, uid, "no_pdf")
         return
 
     for att_index, part in pdf_parts:
@@ -345,6 +410,8 @@ def _process_message(
             orig_name or "unnamed",
             dest,
         )
+
+    _mark_message_processed(conn, mailbox, uid, "ok")
 
 
 # ---------------------------------------------------------------------------
