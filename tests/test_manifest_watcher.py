@@ -304,3 +304,12 @@ def test_repeated_failure_does_not_re_alert(print_dir, config, logger):
 
     mock_alert.assert_not_called()
     assert folder.exists()
+
+
+def test_open_db_with_directory_path(tmp_path):
+    """Passing a directory path for sqlite_path appends manifest_watcher.sqlite3."""
+    db_dir = tmp_path / "database_dir"
+    db_dir.mkdir()
+    conn = _open_db(str(db_dir))
+    conn.close()
+    assert (db_dir / "manifest_watcher.sqlite3").is_file()
