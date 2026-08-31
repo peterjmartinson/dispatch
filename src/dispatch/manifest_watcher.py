@@ -24,6 +24,8 @@ import yaml
 def _open_db(sqlite_path: str) -> sqlite3.Connection:
     """Open (or create) the SQLite database and ensure the manifest_sends table exists."""
     db_path = Path(sqlite_path)
+    if db_path.is_dir() or not db_path.suffix:
+        db_path = db_path / "manifest_watcher.sqlite3"
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path))
     conn.execute("PRAGMA foreign_keys = ON")

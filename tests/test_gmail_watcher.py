@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from dispatch.gmail_watcher import watch
+from dispatch.gmail_watcher import _open_db, watch
 
 
 # ---------------------------------------------------------------------------
@@ -338,4 +338,13 @@ def test_processed_uids_skip_fetch_on_subsequent_runs(drop_dir, sqlite_path, log
     # SEARCH should have been called, but FETCH should never have been called on fake_imap2
     fetch_calls = [call for call in fake_imap2.uid.call_args_list if call[0][0] == "FETCH"]
     assert len(fetch_calls) == 0, f"Expected 0 FETCH calls on rerun, got {len(fetch_calls)}"
+
+
+def test_open_db_with_directory_path(tmp_path):
+    """Passing a directory path for sqlite_path appends gmail_watcher.sqlite3."""
+    db_dir = tmp_path / "database_dir"
+    db_dir.mkdir()
+    conn = _open_db(str(db_dir))
+    conn.close()
+    assert (db_dir / "gmail_watcher.sqlite3").is_file()
 
